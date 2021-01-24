@@ -56,6 +56,62 @@ function build_tnep(pm::AbstractPowerModel)
     end
 end
 
+""
+function run_mn_tnep(file, model_type::Type, optimizer; kwargs...)
+    return run_model(file, model_type, optimizer, build_mn_tnep; multinetwork=true, ref_extensions=[ref_add_on_off_va_bounds!,ref_add_ne_branch!], kwargs...)
+end
+
+function build_mn_tnep(pm::AbstractPowerModel)
+    for (n, network) in nws(pm)
+        variable_bus_voltage(pm, nw=n)
+        variable_gen_power(pm, nw=n)
+        variable_branch_power(pm, nw=n)
+        variable_dcline_power(pm, nw=n)
+
+        variable_ne_branch_indicator(pm, nw=n)
+        variable_ne_branch_power(pm, nw=n)
+        variable_ne_branch_voltage(pm, nw=n)
+       
+        
+        constraint_model_voltage(pm, nw=n)
+        constraint_ne_model_voltage(pm, nw=n)
+        
+        for i in ids(pm, :ref_buses, nw=n)
+            constraint_theta_ref(pm, i, nw=n)
+        end
+        
+        for i in ids(pm, :bus, nw=n)
+            constraint_ne_power_balance(pm, i, nw=n)
+        end
+        
+        for i in ids(pm, :branch, nw=n)
+            constraint_ohms_yt_from(pm, i, nw=n)
+            constraint_ohms_yt_to(pm, i, nw=n)
+            
+            constraint_voltage_angle_difference(pm, i, nw=n)
+    
+            constraint_thermal_limit_from(pm, i, nw=n)
+            constraint_thermal_limit_to(pm, i, nw=n)
+        end
+        
+        for i in ids(pm, :ne_branch, nw=n)
+            constraint_ne_ohms_yt_from(pm, i, nw=n)
+            constraint_ne_ohms_yt_to(pm, i, nw=n)
+            
+            constraint_ne_voltage_angle_difference(pm, i, nw=n)
+            
+            constraint_ne_thermal_limit_from(pm, i, nw=n)
+            constraint_ne_thermal_limit_to(pm, i, nw=n)
+        end
+    
+        for i in ids(pm, :dcline)
+            constraint_dcline_power_losses(pm, i, nw=n)
+        end
+    end
+
+    objective_tnep_cost(pm)
+end
+
 
 "Cost of building branches"
 function objective_tnep_cost(pm::AbstractPowerModel)

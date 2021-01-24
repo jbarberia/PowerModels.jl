@@ -180,3 +180,17 @@ end
         end
     end
 end
+
+@testset "test mn dc tnep" begin
+    @testset "3-bus case" begin
+        data = PowerModels.parse_file("../test/data/matpower/case3_tnep.m")
+        calc_thermal_limits!(data)
+        data = PowerModels.replicate(data, 2)
+        result = PowerModels.run_mn_tnep(data, DCPPowerModel, juniper_solver)
+
+        check_tnep_status(result["solution"])
+
+        @test result["termination_status"] == LOCALLY_SOLVED
+        @test isapprox(result["objective"], 4; atol = 1e-2)
+    end
+end
