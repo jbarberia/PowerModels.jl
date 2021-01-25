@@ -255,3 +255,29 @@ function constraint_storage_on_off(pm::AbstractPowerModel, n::Int, i, pmin, pmax
     JuMP.@constraint(pm.model, qsc <= z_storage*qmax)
     JuMP.@constraint(pm.model, qsc >= z_storage*qmin)
 end
+
+"the ne_branch with same index in the dict data format is built
+ in all the networks or it is not built in all the networks
+ 
+ it would be better to check if are the same branches (f_bus, t_bus, ckt)
+"
+function constraint_ne_same_branches(pm::AbstractPowerModel)
+    ne_var_by_index = Dict()
+
+    for (n, nw) in nws(pm)
+        for (i, ne_branch) in nw[:ne_branch]
+            z = var(pm, n, :branch_ne, i)
+
+            if haskey(ne_var_by_index, i)
+                push!(ne_var_by_index[i], z)
+            else
+                ne_var_by_index[i] = [z]
+            end
+        end
+    end
+
+    for (_, vars) in ne_var_by_index
+        len = length(vars)
+        JuMP.@constraint(pm.model, sum(vars) == len * vars[1])
+    end
+end

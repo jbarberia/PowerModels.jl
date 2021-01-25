@@ -181,6 +181,14 @@ end
     end
 end
 
+function check_mn_tnep_status(sol)
+    for (n, nw) in sol["nw"]
+        for (idx,val) in nw["ne_branch"]
+            @test isapprox(val["built"], 0.0, atol=1e-6, rtol=1e-6) || isapprox(val["built"], 1.0, atol=1e-6, rtol=1e-6)
+        end
+    end
+end
+
 @testset "test mn dc tnep" begin
     @testset "3-bus case" begin
         data = PowerModels.parse_file("../test/data/matpower/case3_tnep.m")
@@ -188,9 +196,47 @@ end
         data = PowerModels.replicate(data, 2)
         result = PowerModels.run_mn_tnep(data, DCPPowerModel, juniper_solver)
 
-        check_tnep_status(result["solution"])
+        check_mn_tnep_status(result["solution"])
 
         @test result["termination_status"] == LOCALLY_SOLVED
         @test isapprox(result["objective"], 4; atol = 1e-2)
+    end
+
+    @testset "5-bus case" begin
+        data = PowerModels.parse_file("../test/data/matpower/case5_tnep.m")
+        calc_thermal_limits!(data)
+        data = PowerModels.replicate(data, 2)
+        result = PowerModels.run_mn_tnep(data, DCPPowerModel, juniper_solver)
+
+        check_mn_tnep_status(result["solution"])
+
+        @test result["termination_status"] == LOCALLY_SOLVED
+        @test isapprox(result["objective"], 2; atol = 1e-2)
+    end
+end
+
+@testset "test mn ac tnep" begin
+    @testset "3-bus case" begin
+        data = PowerModels.parse_file("../test/data/matpower/case3_tnep.m")
+        calc_thermal_limits!(data)
+        data = PowerModels.replicate(data, 2)
+        result = PowerModels.run_mn_tnep(data, ACPPowerModel, juniper_solver)
+
+        check_mn_tnep_status(result["solution"])
+
+        @test result["termination_status"] == LOCALLY_SOLVED
+        @test isapprox(result["objective"], 4; atol = 1e-2)
+    end
+
+    @testset "5-bus case" begin
+        data = PowerModels.parse_file("../test/data/matpower/case5_tnep.m")
+        calc_thermal_limits!(data)
+        data = PowerModels.replicate(data, 2)
+        result = PowerModels.run_mn_tnep(data, ACPPowerModel, juniper_solver)
+
+        check_mn_tnep_status(result["solution"])
+
+        @test result["termination_status"] == LOCALLY_SOLVED
+        @test isapprox(result["objective"], 2; atol = 1e-2)
     end
 end

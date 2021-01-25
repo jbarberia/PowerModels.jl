@@ -72,7 +72,6 @@ function build_mn_tnep(pm::AbstractPowerModel)
         variable_ne_branch_power(pm, nw=n)
         variable_ne_branch_voltage(pm, nw=n)
        
-        
         constraint_model_voltage(pm, nw=n)
         constraint_ne_model_voltage(pm, nw=n)
         
@@ -108,7 +107,7 @@ function build_mn_tnep(pm::AbstractPowerModel)
             constraint_dcline_power_losses(pm, i, nw=n)
         end
     end
-
+    constraint_ne_same_branches(pm)
     objective_tnep_cost(pm)
 end
 
